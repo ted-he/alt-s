@@ -1,6 +1,15 @@
 //const db = firebase.firestore();
 
-
+// Enum-type thing to make code more readable
+const day = {
+    MON: 0,
+    TUE: 1,
+    WED: 2,
+    THU: 3,
+    FRI: 4,
+    SAT: 5,
+    SUN: 6
+}
 
 // Hard-coded subject codes
 const subjectCodes = ["ACC", "ACINTY", "ACTSC", "AE", "AFM", "AHS",
@@ -279,8 +288,10 @@ function loadCourses(key) {
     }
 }
 
+var curCodes = [];
+
 // Generates HTML for options in database given an array of options
-function genererateOptions(arr) {
+function generateOptions(arr) {
     output = "";
 
     for (let i = 0; i < arr.length; i++) {
@@ -289,3 +300,67 @@ function genererateOptions(arr) {
 
     return output;
 }
+
+const subjectField = document.getElementById('subjectField');
+const numField = document.getElementById('numField');
+const submit = document.getElementById('submit');
+
+subjectField.addEventListener('input', () => {
+    if (subjectCodes.indexOf(subjectField.value) == -1) {
+        numField.disabled = true;
+
+        curCodes = [];
+    } else {
+        numField.disabled = false;
+
+        curCodes = catalogNumbers[subjectCodes.indexOf(subjectField.value)];
+        document.getElementById('catalogNums').innerHTML = generateOptions(curCodes);
+    }
+});
+
+numField.addEventListener('input', () => {
+    if (curCodes.indexOf(numField.value) == -1) {
+        submit.disabled = true;
+    } else {
+        submit.disabled = false;
+    }
+});
+
+submit.addEventListener('click', () => {
+    db.collection(subjectField.value).where('catalogNo', '==', numField.value).get().then((qs) => {
+        var cc = qs.docs[0].id;
+
+        const url = `https://openapi.data.uwaterloo.ca/v3/ClassSchedules/1229/${cc}`;
+        const headers = new Headers();
+
+        headers.append('X-API-KEY', '1BA9C32027A0414AA07274555F459683');
+
+        const requestOptions = {
+            method: 'GET',
+            headers: headers
+        }
+
+        fetch(url, requestOptions).then(res => res.json()).then((res) => {
+            var arr = res.data;
+            var fArr = arr.filter(n => n.courseComponent === 'LEC');
+            var outArr = [];
+
+            for (let i = 0; i < fArr.length; i++) {
+                for (let j = 0; j < fArr[i].scheduleData.length; i++) {
+                    let cmst = fArr[i].scheduleData[j].classMeetingStartTime;
+                    let cmet = fArr[i].scheduleData[j].classMeetingEndTime;
+
+                    cmst = cmst.substring(0, cmst.length - 3).substring(cmst.indexOf('T') + 1);
+                    cmet = cmet.substring(0, cmet.length - 3).substring(cmet.indexOf('T') + 1);
+
+                    let instData = fArr[i].instructorData[j];
+                    let prof = `${instData.instructorLastName}, ${instData.instructorFirstName}`;
+
+                    let loc = fArr[i].scheduleData[j].locationName;
+
+                    outArr.push([ prof, cmst, cmet, loc ]);
+                }
+            }
+        })
+    });
+});

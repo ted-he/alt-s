@@ -26,9 +26,28 @@
     <script defer src="./main.js"></script>
   </head>
   <body>
-    <input id="subjectField" list="subjects">
-    <datalist id="subjects">
+    <div>
+      <input id="subjectField" list="subjects" placeholder="Subject Code">
+      <datalist id="subjects"></datalist>
 
-    </datalist>
+      <br />
+
+      <input id="numField" list="catalogNums" placeholder="Subject Number" disabled>
+      <datalist id="catalogNums"></datalist>
+
+      <br />
+
+      <button id="submit" disabled>Go</button>
+    </div>
+
+    <div>
+      <table>
+        <tr>
+          <th>Professor</th>
+          <th>Time</th>
+          <th>Location</th>
+        </tr>
+      </table>
+    </div>
   </body>
 </html>
