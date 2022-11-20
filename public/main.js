@@ -1,4 +1,4 @@
-//const db = firebase.firestore();
+const db = firebase.firestore();
 
 // Enum-type thing to make code more readable
 const day = {
@@ -327,6 +327,8 @@ numField.addEventListener('input', () => {
 });
 
 submit.addEventListener('click', () => {
+    document.getElementById('tblBody').innerHTML = "";
+
     db.collection(subjectField.value).where('catalogNo', '==', numField.value).get().then((qs) => {
         var cc = qs.docs[0].id;
 
@@ -341,26 +343,72 @@ submit.addEventListener('click', () => {
         }
 
         fetch(url, requestOptions).then(res => res.json()).then((res) => {
-            var arr = res.data;
-            var fArr = arr.filter(n => n.courseComponent === 'LEC');
+            var arr = res.filter(n => n.courseComponent === 'LEC');
             var outArr = [];
 
-            for (let i = 0; i < fArr.length; i++) {
-                for (let j = 0; j < fArr[i].scheduleData.length; i++) {
-                    let cmst = fArr[i].scheduleData[j].classMeetingStartTime;
-                    let cmet = fArr[i].scheduleData[j].classMeetingEndTime;
+            for (let i = 0; i < arr.length; i++) {
+                let cur = arr[i];
 
-                    cmst = cmst.substring(0, cmst.length - 3).substring(cmst.indexOf('T') + 1);
-                    cmet = cmet.substring(0, cmet.length - 3).substring(cmet.indexOf('T') + 1);
+                for (let j = 0; j < cur.scheduleData.length; j++) {
+                    let cmst = cur.scheduleData[j].classMeetingStartTime;
+                    let cmet = cur.scheduleData[j].classMeetingEndTime;
 
-                    let instData = fArr[i].instructorData[j];
+                    cmst = conv24to12(cmst.substring(cmst.indexOf('T') + 1));
+                    cmet = conv24to12(cmet.substring(cmet.indexOf('T') + 1));
+
+                    let instData = cur.instructorData[j];
                     let prof = `${instData.instructorLastName}, ${instData.instructorFirstName}`;
 
-                    let loc = fArr[i].scheduleData[j].locationName;
+                    let loc = cur.scheduleData[j].locationName;
 
-                    outArr.push([ prof, cmst, cmet, loc ]);
+                    let sCode = cur.scheduleData[j].classMeetingWeekPatternCode;
+                    console.log(sCode);
+
+                    outArr.push([prof, cmst, cmet, loc, sCode]);
                 }
             }
-        })
+
+            let rowsHTML = generateRows(outArr);
+
+            for (let i = 0; i < rowsHTML.length; i++) {
+                let row = document.createElement('tr');
+                row.innerHTML = rowsHTML[i];
+                row.id = `row_${i}`;
+                document.getElementById('tblBody').appendChild(row);
+            }
+        });
     });
 });
+
+function generateRows(arr) {
+    let output = [];
+
+    for (let i = 0; i < arr.length; i++) {
+        let row = "";
+
+        for (let j = 0; j < 4; j++) {
+            row += `<td ${j == 0 ? 'class="left"' : ""}>${arr[i][j]}</td>`;
+        }
+
+        for (let j = 0; j < 7; j++) {
+            row += `<td bgcolor="#${arr[i][4].charAt(j) === "Y" ? "00FF00" : "FFFFFF"}"></td>`;
+        }
+
+        output.push(row);
+    }
+
+    return output;
+}
+
+// Implementation from HBP on SOF
+function conv24to12(time) {
+    // Check correct time format and split into components
+  time = time.toString ().match (/^([01]\d|2[0-3])(:)([0-5]\d)(:[0-5]\d)?$/) || [time];
+
+  if (time.length > 1) { // If time format correct
+    time = time.slice (1);  // Remove full string match value
+    time[5] = +time[0] < 12 ? ' AM' : ' PM'; // Set AM/PM
+    time[0] = +time[0] % 12 || 12; // Adjust hours
+  }
+  return time.join (''); // return adjusted time or original string
+}
