@@ -306,6 +306,8 @@ const numField = document.getElementById('numField');
 const submit = document.getElementById('submit');
 
 subjectField.addEventListener('input', () => {
+    document.getElementById('numField').value = "";
+
     if (subjectCodes.indexOf(subjectField.value) == -1) {
         numField.disabled = true;
 
@@ -318,11 +320,27 @@ subjectField.addEventListener('input', () => {
     }
 });
 
+subjectField.addEventListener('keypress', (e) => {
+    if (e.key === "Enter" && subjectCodes.indexOf(subjectField.value) != -1) {
+        e.preventDefault();
+        document.getElementById('numField').disabled = false;
+        document.getElementById('numField').focus();
+    }
+});
+
 numField.addEventListener('input', () => {
     if (curCodes.indexOf(numField.value) == -1) {
         submit.disabled = true;
     } else {
         submit.disabled = false;
+    }
+});
+
+numField.addEventListener('keypress', (e) => {
+    if (e.key === "Enter") {
+        e.preventDefault();
+        document.getElementById('submit').disabled = false;
+        document.getElementById('submit').click();
     }
 });
 
